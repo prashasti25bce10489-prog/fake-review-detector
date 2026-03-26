@@ -6,64 +6,78 @@ from sklearn.naive_bayes import MultinomialNB
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 
 print("="*50)
-print("FAKE REVIEW DETECTION PROJECT")
+print("okay lets see if these reviews are real or just paid")
 print("="*50)
 
-print("\nLoading dataset...")
-df = pd.read_csv('fake reviews dataset.csv')
-print(f"Loaded {len(df)} reviews")
+file_name= "fake reviews dataset.csv"
 
-print("\nColumns in dataset:")
-print(df.columns.tolist())
+try:
+    df = pd.read_csv(file_name)
+    print(f"\nCool, found {len(df)} reviews in the file")
+except:
+    print(f"\nOops, can't find {file_name}. Did you move it?")
+    exit()
+print("\nQuick look at what columns we got:")
+for col in df.columns:
+    print(f"   - {col}")
 
-print("\nFirst 2 rows:")
-print(df.head(2))
+
+print("\nFirst couple of reviews just to see what we're dealing with:")
+for i in range(min(2, len(df))):
+    print(f"\nReview #{i+1}:")
+    print(f"   Said: {df['text_'].iloc[i][:120]}...")
+    print(f"   Marked as: {df['label'].iloc[i]}")
 
 print("\nConverting text to numbers...")
 vectorizer = CountVectorizer(max_features=1000)
-X = vectorizer.fit_transform(df['text_'].fillna(''))
-print(f"Created {X.shape[1]} features")
 
-print("\nPreparing labels...")
+review_texts = df['text_'].fillna('')
+X = vectorizer.fit_transform(review_texts)
+
 y = df['label']
-print(f"Labels found: {y.unique().tolist()}")
 
-print("\nSplitting data into train and test...")
+print(f"Done. Now we have {X.shape[1]} features from {X.shape[0]} reviews")
+
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-print(f"Training: {X_train.shape[0]} reviews")
-print(f"Testing: {X_test.shape[0]} reviews")
 
-print("\nTraining Naive Bayes model...")
+print(f"\nTraining on {X_train.shape[0]} reviews")
+print(f"Testing on {X_test.shape[0]} reviews")
+
+print("\nTraining the model...")
 model = MultinomialNB()
 model.fit(X_train, y_train)
-print("Training complete")
+print("Done training")
 
-print("\nMaking predictions...")
+print("\nRunning predictions...")
 y_pred = model.predict(X_test)
 
-print("\n" + "="*50)
-print("RESULTS")
-print("="*50)
+acc = accuracy_score(y_test, y_pred)
 
-accuracy = accuracy_score(y_test, y_pred)
-print(f"\nACCURACY: {accuracy:.2%}")
+print("\n" + "-"*40)
+print(f"Accuracy: {acc:.2%}")
+print("-"*40)
 
-print("\nCLASSIFICATION REPORT:")
+print("\nDetailed breakdown:")
 print(classification_report(y_test, y_pred))
 
-print("\nCONFUSION MATRIX:")
+print("\nConfusion matrix (actual vs predicted):")
 print(confusion_matrix(y_test, y_pred))
 
-print("\n" + "="*50)
-print("TOP 15 WORDS THAT INDICATE FAKE REVIEWS")
-print("="*50)
+print("\n" + "-"*40)
+print("Words that scream FAKE:")
+print("-"*40)
 
 feature_names = vectorizer.get_feature_names_out()
-top_features = np.argsort(model.feature_log_prob_[1])[-15:]
+fake_scores = model.feature_log_prob_[1]
 
-for i, idx in enumerate(reversed(top_features), 1):
+top_words = np.argsort(fake_scores)[-15:]
+
+for i, idx in enumerate(reversed(top_words), 1):
     print(f"{i:2d}. {feature_names[idx]}")
 
-print("\n" + "="*50)
-print("PROJECT COMPLETE!")
-print("="*50)
+print("\nMakes sense. Fake reviews love extreme words.")
+print("Real reviews are more chill and specific.")
+
+print("\n" + "-"*40)
+print("That's it. Done.")
+print("-"*40)
